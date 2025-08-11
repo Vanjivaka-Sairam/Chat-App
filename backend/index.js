@@ -12,7 +12,7 @@ app.use(cookieParser());
 
 
 app.use('/api/auth', authRoutes);
-
+app.use('/api/users', userRoutes);
 
 const startServer = async ()=>{
     await connect();
