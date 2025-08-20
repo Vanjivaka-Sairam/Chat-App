@@ -9,6 +9,7 @@ import SignUpPage from './pages/SignUpPage'
 import { Toaster, toast } from 'react-hot-toast' // <-- Add toast here
 import  useAuthUser from './hooks/useAuthUser.js'
 import PageLoader from './components/PageLoader.jsx'
+import Layout from './components/Layout.jsx'
 
 const App = () => {
   const {isLoading, authUser} = useAuthUser();
@@ -19,10 +20,22 @@ const App = () => {
   if(isLoading)return <PageLoader />
   
   return (
-    <div>
+    <div data-theme = "forest">
       <Toaster/>
       <Routes>
-        <Route path="/" element={isAuthenticated  && isOnboarded? <HomePage /> : <Navigate to= {!isAuthenticated? "/login" : "/onboarding"}/>} />
+        <Route
+          path="/"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <HomePage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+
         <Route path="/call" element={isAuthenticated ? <CallPage /> : <Navigate to="/login" />} />
          <Route
           path="/onboarding"
