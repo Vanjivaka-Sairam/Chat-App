@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { LANGUAGE_TO_FLAG } from "../constants";
+import { Phone } from "lucide-react";
 
 const FriendCard = ({ friend }) => {
   return (
@@ -24,9 +25,15 @@ const FriendCard = ({ friend }) => {
           </span>
         </div>
 
-        <Link to={`/chat/${friend._id}`} className="btn btn-outline w-full">
-          Message
-        </Link>
+        <div className="flex gap-2">
+          <Link to={`/call?userId=${friend._id}`} className="btn btn-primary flex-1">
+            <Phone className="w-4 h-4 mr-1" />
+            Call
+          </Link>
+          <Link to={`/chat?friendId=${friend._id}`} className="btn btn-outline flex-1">
+            Message
+          </Link>
+        </div>
       </div>
     </div>
   );

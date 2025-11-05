@@ -83,13 +83,13 @@ const sendFriendrequest = async (req, res) => {
 
 const acceptFriendRequest = async (req, res) => {
     try{
-        const {id : requestID} = req.params;
+        const {id : requestId} = req.params;
         const friendRequest = await FriendRequest.findById(requestId);
         if(!friendRequest){
             return res.status(404).json({mssg : "friend request not found"})
         }
 
-        if(friendRequest.recipient.toString() !== req.user.id){
+        if(friendRequest.recipient.toString() !== req.user._id.toString()){
             return res.status(403).json({mssg : "You are not authorized to accept this request"});
         }
 
@@ -97,17 +97,17 @@ const acceptFriendRequest = async (req, res) => {
         await friendRequest.save();
 
         await User.findByIdAndUpdate(friendRequest.recipient, {
-            $addToset : {friends : friendRequest.sender},
+            $addToSet : {friends : friendRequest.sender},
         });
 
         await User.findByIdAndUpdate(friendRequest.sender, {
-            $addToset : {friends : friendRequest.recipient},
+            $addToSet : {friends : friendRequest.recipient},
         });
 
         res.status(200).json({mssg : "Friend request accepted"});
     }
     catch(error){
-        console.log("Error in accepting frined request", error.message);
+        console.log("Error in accepting friend request", error.message);
         res.status(500).json({mssg : "Internal Server Error"});
     }
 }
@@ -115,14 +115,17 @@ const acceptFriendRequest = async (req, res) => {
 const getFriendRequests = async (req, res) => {
     try{
         const incomingReqs = await FriendRequest.find({
-            recipient : req.user.id,
+            recipient : req.user._id,
             status : "pending",
-        }).populate("recipient", "fullName profilePic nativeLanguage learningLanguage");
+        }).populate("sender", "fullName profilePic nativeLanguage learningLanguage");
 
         const acceptedReqs = await FriendRequest.find({
-            sender : req.user.id,
-            status : "accepted",
-        }).populate("recipient", "fullName profilePic");
+            $or: [
+                { sender: req.user._id, status: "accepted" },
+                { recipient: req.user._id, status: "accepted" }
+            ]
+        }).populate("sender", "fullName profilePic")
+          .populate("recipient", "fullName profilePic");
 
         res.status(200).json({incomingReqs, acceptedReqs});
     }
@@ -136,11 +139,11 @@ const getFriendRequests = async (req, res) => {
 const getOutgoingFriendReqs = async (req, res) =>{
     try{
         const outgoingRequests = await FriendRequest.find({
-            sender : req.user.id,
+            sender : req.user._id,
             status : "pending",
         }).populate("recipient", "fullName profilePic nativeLanguage learningLanguage");
 
-        res.status(200).json({outgoingRequests});
+        res.status(200).json(outgoingRequests);
         }
         catch(error){
         console.log("Error in getOutgoingFriendReqs controller", error.message);

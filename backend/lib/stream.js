@@ -29,4 +29,4 @@ const generateStreamToken = (userId) => {
     }
 }
 
-module.exports = {upsertStreamUser};
+module.exports = {upsertStreamUser, generateStreamToken};

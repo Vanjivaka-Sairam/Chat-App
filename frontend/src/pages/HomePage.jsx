@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   getOutgoingFriendReqs,
   getRecommendedUsers,
@@ -16,10 +16,13 @@ import NoFriendsFound from "../components/NoFriendsFound";
 
 const HomePage = () => {
   const queryClient = useQueryClient();
+  const [optimisticSentRequests, setOptimisticSentRequests] = useState(new Set());
+  
   const { data: outgoingFriendReqs } = useQuery({
     queryKey: ["outgoingFriendReqs"],
     queryFn: getOutgoingFriendReqs,
   });
+  
   const outgoingRequestsIds = useMemo(() => {
     const ids = new Set();
     if (outgoingFriendReqs && Array.isArray(outgoingFriendReqs)) {
@@ -27,8 +30,10 @@ const HomePage = () => {
         if (req && req.recipient && req.recipient._id) ids.add(req.recipient._id);
       });
     }
+    // Merge with optimistic updates
+    optimisticSentRequests.forEach((id) => ids.add(id));
     return ids;
-  }, [outgoingFriendReqs]);
+  }, [outgoingFriendReqs, optimisticSentRequests]);
 
   const { data: friends = [], isLoading: loadingFriends } = useQuery({
     queryKey: ["friends"],
@@ -42,8 +47,20 @@ const HomePage = () => {
 
   const { mutate: sendRequestMutation, isPending } = useMutation({
     mutationFn: sendFriendRequest,
+    onMutate: async (userId) => {
+      // Optimistically add the userId to the set
+      setOptimisticSentRequests((prev) => new Set([...prev, userId]));
+    },
     onSuccess: (_data, userId) => {
       queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
+    },
+    onError: (_error, userId) => {
+      // Remove from optimistic set if the request failed
+      setOptimisticSentRequests((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
     },
   });
 
