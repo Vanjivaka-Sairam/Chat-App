@@ -2,7 +2,8 @@
 import { io } from 'socket.io-client';
 import Cookies from 'js-cookie';
 
-const WEBSOCKET_URL = 'http://localhost:3001';
+// Get WebSocket URL from environment variable or use default
+const WEBSOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
 class WebRTCManager {
   constructor(userId) {

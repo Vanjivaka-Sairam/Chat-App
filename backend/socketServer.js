@@ -13,7 +13,19 @@ const httpServer = http.createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests with no origin or from allowed origins
+      const allowedOrigins = [
+        "http://localhost:5173",
+        process.env.FRONTEND_URL,
+      ].filter(Boolean);
+      
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST'],
     allowedHeaders: ['Cookie', 'Authorization'],
@@ -393,10 +405,23 @@ async function saveCallHistory(callData) {
   }
 }
 
-const startSocketServer = (PORT) => {
+const startSocketServer = (PORT, HOST = '0.0.0.0') => {
   try {
-    httpServer.listen(PORT, () => {
-      console.log(`WebRTC Signaling server listening on http://localhost:${PORT}`);
+    httpServer.listen(PORT, HOST, () => {
+      console.log(`WebRTC Signaling server listening on http://${HOST}:${PORT}`);
+      console.log(`Local access: http://localhost:${PORT}`);
+      if (HOST === '0.0.0.0') {
+        const os = require('os');
+        const interfaces = os.networkInterfaces();
+        for (const name of Object.keys(interfaces)) {
+          for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+              console.log(`Network access: http://${iface.address}:${PORT}`);
+              break;
+            }
+          }
+        }
+      }
     });
     
     httpServer.on('error', (error) => {
